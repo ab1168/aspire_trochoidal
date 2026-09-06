@@ -109,7 +109,7 @@ This gadget is provided “as is”, without warranty of any kind. Use at your o
 
 **Your Name**  
 [ab1168@gmail.com]  
-[Your Website/GitHub]
+[GitHub](https://github.com/ab1168/aspire_trochoidal/)]
 
 ---
 
