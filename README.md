@@ -3,6 +3,7 @@
 **Version:** 1.0.0  
 **Compatible with:** Vectric Aspire 12.014  
 **License:** GNU Lesser General Public License v3.0
+By ab1168@gmail.com (Ashkan.B)
 
 ---
 
