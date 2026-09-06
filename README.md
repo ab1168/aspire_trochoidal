@@ -6,6 +6,7 @@
 
 **By:** ab1168@gmail.com (Ashkan.B)
 
+[Download Latest Version](https://github.com/ab1168/aspire_trochoidal/releases/tag/3.2)
 ---
 
 ## Overview
