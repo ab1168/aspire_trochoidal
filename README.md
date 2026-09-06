@@ -27,6 +27,10 @@ The gadget works on selected vectors (open or closed contours) and produces a co
 
 ## Installation
 
+Automatic Install:
+You can install this gadget by going to "Gadgets" menu in Aspire Vectric V12 and then using "Install New Gadget" menu, select the release file.
+
+Manual Install:
 1. **Download** the gadget files from this repository.
 2. **Copy** the `TrochoidalGadget.lua` (or the provided gadget folder) into your Vectric Aspire gadgets directory. Typically:
    - Windows: `C:\Users\<YourUserName>\AppData\Roaming\Vectric\Aspire\Gadgets\`
