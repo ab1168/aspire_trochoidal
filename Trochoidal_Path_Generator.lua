@@ -1,6 +1,6 @@
--- VECTRIC LUA SCRIPT
+-- VECTRIC LUA SCRIPT | By ab1168@gmail.com
 -- Trochoidal Path Generator for Aspire 12
--- Version 3.0
+-- Version 3.2
 --
 -- Generates trochoidal TOOL-CENTER vectors from selected Vectric contours.
 -- Supported source geometry: line, arc, Bezier, polyline, mixed contours,
@@ -12,8 +12,8 @@
 --
 -- IMPORTANT: Always preview/simulate before machining.
 
-local VERSION = "3.0"
-local REG_SECTION = "OpenAI_Trochoidal_Path_Generator_v3"
+local VERSION = "3.2"
+local REG_SECTION = "OpenAI_Trochoidal_Path_Generator_v3_2"
 local PI = math.pi
 local TWO_PI = 2.0 * PI
 local EPS = 1.0e-9
@@ -76,54 +76,75 @@ end
 -- This deliberately avoids assuming that Bezier parameter u is proportional
 -- to arc length.
 local function sample_contour(src, sample_step, tolerance)
+  -- Aspire 12 builds can expose Span:PointAtParameter() with different
+  -- overloads. Avoid that API entirely: polygonize the source contour and
+  -- read StartPoint2D/EndPoint2D from the resulting line spans.
+  local max_line_len = math.max(sample_step, tolerance * 10.0)
+  local poly = src:CreatePolygonizedCopy(tolerance, max_line_len)
+  if poly == nil or poly.IsEmpty then
+    return nil, nil, 0.0, "Contour could not be polygonized."
+  end
+
   local pts = {}
   local cum = {}
   local total = 0.0
 
-  local function append_point(x, y)
-    local p = {x = x, y = y}
+  local function append_unique(p)
+    if p == nil then return end
+    local x, y = p.X, p.Y
+
     if #pts == 0 then
-      pts[1] = p
+      pts[1] = {x = x, y = y}
       cum[1] = 0.0
       return
     end
-    local d = distance_xy(pts[#pts], p)
+
+    local last = pts[#pts]
+    local dx = x - last.x
+    local dy = y - last.y
+    local d = math.sqrt(dx * dx + dy * dy)
+
     if d <= math.max(tolerance * 0.05, 1.0e-10) then
       return
     end
+
     total = total + d
-    pts[#pts + 1] = p
+    pts[#pts + 1] = {x = x, y = y}
     cum[#cum + 1] = total
   end
 
-  local pos = src:GetHeadPosition()
+  local pos = poly:GetHeadPosition()
   while pos ~= nil do
     local span
-    span, pos = src:GetNext(pos)
+    span, pos = poly:GetNext(pos)
 
-    local span_len = span:GetLength(tolerance)
-    if span_len > EPS then
-      local n = math.max(1, math.ceil(span_len / sample_step))
-      for j = 0, n do
-        local u = j / n
-        local p = span:PointAtParameter(u, tolerance)
-        append_point(p.X, p.Y)
-      end
-    end
+    -- Polygonized spans are line spans. No PointAtParameter overload is used.
+    append_unique(span.StartPoint2D)
+    append_unique(span.EndPoint2D)
   end
 
-  if #pts < 2 then
-    return nil, nil, 0.0, "Contour could not be sampled."
+  if #pts < 2 or total <= EPS then
+    return nil, nil, 0.0, "Contour could not be converted to a usable polyline."
   end
 
-  -- Vectric closed contours normally finish exactly at their start point.
-  -- If not, explicitly add the closure segment so arc-length lookup remains
-  -- periodic and continuous.
+  -- append_unique() deliberately removes the duplicate end point of a
+  -- closed contour. Re-add the closing segment explicitly so 'total' is the
+  -- true perimeter and point_at_length() has a final interval [last -> first].
   if src.IsClosed then
     local first = pts[1]
     local last = pts[#pts]
-    if distance_xy(last, first) > math.max(tolerance, 1.0e-8) then
-      append_point(first.x, first.y)
+    local dx = first.x - last.x
+    local dy = first.y - last.y
+    local close_len = math.sqrt(dx * dx + dy * dy)
+
+    if close_len > math.max(tolerance * 0.05, 1.0e-10) then
+      total = total + close_len
+      pts[#pts + 1] = {x = first.x, y = first.y}
+      cum[#cum + 1] = total
+    else
+      -- Degenerate closure: still make the cumulative endpoint available.
+      pts[#pts + 1] = {x = first.x, y = first.y}
+      cum[#cum + 1] = total
     end
   end
 
@@ -617,7 +638,7 @@ table{width:100%;border-collapse:collapse;} td{padding:3px 2px;vertical-align:mi
 </style>
 </head>
 <body>
-<h2>Trochoidal Path Generator 3.0</h2>
+<h2>Trochoidal Path Generator 3.2</h2>
 <div class="note">Select one or more vectors before running. Supports lines, arcs, Beziers, polylines, mixed contours, open and closed vectors.</div>
 
 <h3>Trochoid geometry</h3>
@@ -708,7 +729,7 @@ function OnLuaButton_CreateButton(dialog)
     return process_selection(opts)
   end, debug.traceback)
   if not ok then
-    DisplayMessageBox("Trochoidal Path Generator 3.0 - unexpected error\n\n" .. tostring(result))
+    DisplayMessageBox("Trochoidal Path Generator 3.2 - unexpected error\n\n" .. tostring(result))
   end
   return true
 end
@@ -723,7 +744,7 @@ function main(script_path)
   local d = load_defaults(job)
   if d.side ~= 1 and d.side ~= -1 then d.side = 1 end
 
-  local dialog = HTML_Dialog(true, HTML, 620, 900, "Trochoidal Path Generator 3.0")
+  local dialog = HTML_Dialog(true, HTML, 620, 900, "Trochoidal Path Generator 3.2")
   dialog:AddDoubleField("ToolDia", d.tool_dia)
   dialog:AddDoubleField("SlotWidth", d.slot_width)
   dialog:AddDoubleField("Pitch", d.pitch)
