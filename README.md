@@ -1,6 +1,6 @@
 # Trochoidal Toolpath Gadget for Vectric Aspire
 
-**Version:** 1.0.0  
+**Version:** 3.2.0
 **Compatible with:** Vectric Aspire 12.014  
 **License:** GNU Lesser General Public License v3.0
 
